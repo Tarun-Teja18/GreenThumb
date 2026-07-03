@@ -1,0 +1,42 @@
+package dev.tarun.greenthumb.security;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+
+@Configuration
+public class SecurityConfiguration {
+
+    // Bean #1: how we hash & verify passwords. BCrypt is the industry standard.
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    // Bean #2: the security rulebook — which requests are open, which need auth.
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            // 1. Disable CSRF — it protects cookie/session apps; we're stateless (token-based).
+            .csrf(csrf -> csrf.disable())
+
+            // 2. No server-side sessions. Every request must carry its own proof (the JWT).
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+            // 3. The authorization rules, checked top to bottom:
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/**").permitAll()                       // login/register: open
+                .requestMatchers(HttpMethod.GET, "/api/growers/**",
+                                                 "/api/plant-types/**",
+                                                 "/api/plants/**").permitAll()      // browsing catalog: open
+                .anyRequest().authenticated()                                      // everything else: must be logged in
+            );
+
+        return http.build();
+    }
+}
