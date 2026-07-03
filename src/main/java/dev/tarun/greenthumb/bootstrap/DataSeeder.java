@@ -8,9 +8,11 @@ import org.springframework.stereotype.Component;
 import dev.tarun.greenthumb.domain.Grower;
 import dev.tarun.greenthumb.domain.Plant;
 import dev.tarun.greenthumb.domain.PlantType;
+import dev.tarun.greenthumb.domain.Role;
 import dev.tarun.greenthumb.repository.GrowerRepository;
 import dev.tarun.greenthumb.repository.PlantRepository;
 import dev.tarun.greenthumb.repository.PlantTypeRepository;
+import dev.tarun.greenthumb.repository.RoleRepository;
 
 /**
  * Seeds sample data on startup so the read endpoints have something to return.
@@ -22,14 +24,16 @@ public class DataSeeder implements CommandLineRunner {
     private final GrowerRepository growerRepository;
     private final PlantTypeRepository plantTypeRepository;
     private final PlantRepository plantRepository;
+    private final RoleRepository roleRepository;
 
     // All three repositories are injected by Spring via this constructor.
     public DataSeeder(GrowerRepository growerRepository,
                       PlantTypeRepository plantTypeRepository,
-                      PlantRepository plantRepository) {
+                      PlantRepository plantRepository, RoleRepository roleRepository) {
         this.growerRepository = growerRepository;
         this.plantTypeRepository = plantTypeRepository;
         this.plantRepository = plantRepository;
+        this.roleRepository = roleRepository;
     }
 
     @Override
@@ -70,6 +74,16 @@ public class DataSeeder implements CommandLineRunner {
             plantRepository.save(makePlant(
                     "Aloe Vera", "https://example.com/aloe.jpg",
                     15.0, 12.0, 30, urbanRoots, succulents));
+        }
+
+        if (roleRepository.count() == 0) {
+            Role user = new Role();  
+            user.setName("ROLE_USER");   
+            roleRepository.save(user);
+            
+            Role admin = new Role(); 
+            admin.setName("ROLE_ADMIN");  
+            roleRepository.save(admin);
         }
     }
 
