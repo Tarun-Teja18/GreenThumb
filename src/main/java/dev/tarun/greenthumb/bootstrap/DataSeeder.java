@@ -1,18 +1,22 @@
 package dev.tarun.greenthumb.bootstrap;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import dev.tarun.greenthumb.domain.Grower;
 import dev.tarun.greenthumb.domain.Plant;
 import dev.tarun.greenthumb.domain.PlantType;
 import dev.tarun.greenthumb.domain.Role;
+import dev.tarun.greenthumb.domain.User;
 import dev.tarun.greenthumb.repository.GrowerRepository;
 import dev.tarun.greenthumb.repository.PlantRepository;
 import dev.tarun.greenthumb.repository.PlantTypeRepository;
 import dev.tarun.greenthumb.repository.RoleRepository;
+import dev.tarun.greenthumb.repository.UserRepository;
 
 /**
  * Seeds sample data on startup so the read endpoints have something to return.
@@ -25,15 +29,22 @@ public class DataSeeder implements CommandLineRunner {
     private final PlantTypeRepository plantTypeRepository;
     private final PlantRepository plantRepository;
     private final RoleRepository roleRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     // All three repositories are injected by Spring via this constructor.
     public DataSeeder(GrowerRepository growerRepository,
                       PlantTypeRepository plantTypeRepository,
-                      PlantRepository plantRepository, RoleRepository roleRepository) {
+                      PlantRepository plantRepository, 
+                      RoleRepository roleRepository,
+                      UserRepository userRepository,
+                      PasswordEncoder passwordEncoder) {
         this.growerRepository = growerRepository;
         this.plantTypeRepository = plantTypeRepository;
         this.plantRepository = plantRepository;
         this.roleRepository = roleRepository;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -84,6 +95,18 @@ public class DataSeeder implements CommandLineRunner {
             Role admin = new Role(); 
             admin.setName("ROLE_ADMIN");  
             roleRepository.save(admin);
+        }
+
+        if (!userRepository.existsByEmail("admin@example.com")) {
+            Role adminRole = roleRepository.findById("ROLE_ADMIN")
+                    .orElseThrow(() -> new IllegalStateException("ROLE_ADMIN not seeded"));
+            User admin = new User();
+            admin.setName("Admin");
+            admin.setEmail("admin@example.com");
+            admin.setPassword(passwordEncoder.encode("admin123"));
+            admin.setActive(true);
+            admin.setRoles(Set.of(adminRole));
+            userRepository.save(admin);
         }
     }
 
