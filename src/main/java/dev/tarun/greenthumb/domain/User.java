@@ -1,7 +1,12 @@
 package dev.tarun.greenthumb.domain;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -20,7 +25,7 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "app_user")     // "user" is a reserved word in Postgres, so we use app_user
-public class User extends Auditable {
+public class User extends Auditable implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,4 +50,24 @@ public class User extends Auditable {
         inverseJoinColumns = @JoinColumn(name = "role_name")     // FK → the other entity (Role)
     )
     private Set<Role> roles = new HashSet<>();
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        // translate your Role objects → Security's "authorities" format
+        return roles.stream()
+                .map(role -> new SimpleGrantedAuthority(role.getName()))
+                .toList();
+    }
+
+    @Override
+    public String getUsername() {
+        return email;          // Security's "username" is our login field: email
+    }
+
+    // getPassword() is already provided by Lombok's @Getter — it returns your hash
+
+    @Override public boolean isAccountNonExpired()     { return true; }
+    @Override public boolean isAccountNonLocked()      { return true; }
+    @Override public boolean isCredentialsNonExpired() { return true; }
+    @Override public boolean isEnabled()               { return active; }   // inactive users can't log in
 }

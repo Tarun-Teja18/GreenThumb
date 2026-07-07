@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import dev.tarun.greenthumb.dto.AuthResponseDTO;
+import dev.tarun.greenthumb.dto.LoginRequestDTO;
 import dev.tarun.greenthumb.dto.RegisterRequestDTO;
 import dev.tarun.greenthumb.dto.UserDTO;
 import dev.tarun.greenthumb.service.AuthService;
@@ -26,5 +28,10 @@ public class AuthController {
     public ResponseEntity<UserDTO> register(@Valid @RequestBody RegisterRequestDTO request) {
         UserDTO created = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
+        return ResponseEntity.ok(authService.login(request));
     }
 }

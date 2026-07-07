@@ -3,16 +3,22 @@ package dev.tarun.greenthumb.service.impl;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import dev.tarun.greenthumb.domain.Role;
 import dev.tarun.greenthumb.domain.User;
+import dev.tarun.greenthumb.dto.AuthResponseDTO;
+import dev.tarun.greenthumb.dto.LoginRequestDTO;
 import dev.tarun.greenthumb.dto.RegisterRequestDTO;
 import dev.tarun.greenthumb.dto.UserDTO;
 import dev.tarun.greenthumb.exception.NotFoundException;
 import dev.tarun.greenthumb.repository.RoleRepository;
 import dev.tarun.greenthumb.repository.UserRepository;
+import dev.tarun.greenthumb.security.TokenProvider;
 import dev.tarun.greenthumb.service.AuthService;
 
 @Service
@@ -21,13 +27,19 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;   // the BCrypt bean from SecurityConfiguration
+    private final AuthenticationManager authenticationManager;
+    private final TokenProvider tokenProvider;
 
     public AuthServiceImpl(UserRepository userRepository,
                            RoleRepository roleRepository,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           AuthenticationManager authenticationManager,
+                           TokenProvider tokenProvider) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
+        this.tokenProvider = tokenProvider;
     }
 
     @Override
@@ -52,6 +64,17 @@ public class AuthServiceImpl implements AuthService {
         // 4. save and return a safe DTO
         User saved = userRepository.save(user);
         return toDto(saved);
+    }
+
+    @Override
+    public AuthResponseDTO login(LoginRequestDTO request) {
+        // hands credentials to the supervisor → loads user, checks BCrypt password
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.email(), request.password()));
+
+        // credentials good → print the badge
+        String token = tokenProvider.generateToken(authentication);
+        return new AuthResponseDTO(token);
     }
 
     private UserDTO toDto(User u) {
