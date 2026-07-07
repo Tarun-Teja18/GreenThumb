@@ -10,6 +10,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 public class SecurityConfiguration {
@@ -22,7 +23,7 @@ public class SecurityConfiguration {
 
     // Bean #2: the security rulebook — which requests are open, which need auth.
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JWTFilter jwtFilter) throws Exception {
         http
             // 1. Disable CSRF — it protects cookie/session apps; we're stateless (token-based).
             .csrf(csrf -> csrf.disable())
@@ -37,8 +38,8 @@ public class SecurityConfiguration {
                                                  "/api/plant-types/**",
                                                  "/api/plants/**").permitAll()      // browsing catalog: open
                 .anyRequest().authenticated()                                      // everything else: must be logged in
-            );
-
+            )
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 

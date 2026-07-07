@@ -1,16 +1,22 @@
 package dev.tarun.greenthumb.security;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
@@ -39,5 +45,32 @@ public class TokenProvider {
                 .expiration(new Date(now.getTime() + validityMs))
                 .signWith(key)                                  // sign → tamper-proof
                 .compact();                                     // produce the string
+    }
+
+    // Is this token genuine and unexpired? (verifies the signature with our key)
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;   // bad signature, expired, tampered, or malformed
+        }
+    }
+
+    // Unpack the token into a Spring "Authentication" (who + their roles)
+    public Authentication getAuthentication(String token) {
+        Claims claims = Jwts.parser().verifyWith(key).build()
+                .parseSignedClaims(token).getPayload();
+
+        String email = claims.getSubject();                       // the "sub"
+        String rolesString = claims.get("roles", String.class);   // "ROLE_USER,..."
+
+        List<SimpleGrantedAuthority> authorities = Arrays.stream(rolesString.split(","))
+                .filter(r -> !r.isBlank())
+                .map(SimpleGrantedAuthority::new)
+                .toList();
+
+        // 2nd arg (credentials) is null — the token already proved identity, no password needed
+        return new UsernamePasswordAuthenticationToken(email, null, authorities);
     }
 }
