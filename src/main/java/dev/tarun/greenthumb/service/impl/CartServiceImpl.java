@@ -68,6 +68,42 @@ public class CartServiceImpl implements CartService {
         return toCartDto(cart);
     }
 
+    @Override
+    public CartResponseDTO updateItemQuantity(Long itemId, Integer quantity) {
+        Cart cart = getOrCreateActiveCart();
+        CartItem item = cartItemRepository
+                .findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Cart item not found: " + itemId));
+
+        if (!item.getCart().getId().equals(cart.getId())) {
+            throw new NotFoundException("Cart item not found: " + itemId);
+        }
+
+        item.setQuantity(quantity);
+        item.setAmount(item.getPlant().getSellingPrice() * item.getQuantity());   // line total
+        cartItemRepository.save(item);
+
+        return toCartDto(cart);
+    }
+
+    @Override
+    public CartResponseDTO removeItem(Long itemId) {
+        Cart cart = getOrCreateActiveCart();
+        CartItem item = cartItemRepository
+                .findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Cart item not found: " + itemId));
+
+        if (!item.getCart().getId().equals(cart.getId())) {
+            throw new NotFoundException("Cart item not found: " + itemId);
+        }
+
+        item.setStatus(CartItemStatus.REMOVED);
+
+        cartItemRepository.save(item);
+
+        return toCartDto(cart);
+    }
+
     // ---- helpers ----
 
     private User getCurrentUser() {

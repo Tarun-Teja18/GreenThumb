@@ -2,14 +2,18 @@ package dev.tarun.greenthumb.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import dev.tarun.greenthumb.dto.CartItemRequestDTO;
 import dev.tarun.greenthumb.dto.CartResponseDTO;
+import dev.tarun.greenthumb.dto.UpdateQuantityDTO;
 import dev.tarun.greenthumb.service.CartService;
 import jakarta.validation.Valid;
 
@@ -31,5 +35,15 @@ public class CartController {
     @PostMapping("/items")
     public ResponseEntity<CartResponseDTO> addItem(@Valid @RequestBody CartItemRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(cartService.addItem(request));
+    }
+
+    @PutMapping("/items/{id}")
+    public CartResponseDTO updateItemQuantity(@PathVariable Long id, @Valid @RequestBody UpdateQuantityDTO request) {
+        return cartService.updateItemQuantity(id, request.quantity());
+    }
+
+    @DeleteMapping("/items/{id}")                   // DELETE /api/cart/items/5
+    public CartResponseDTO delete(@PathVariable Long id) {
+        return cartService.removeItem(id);
     }
 }
