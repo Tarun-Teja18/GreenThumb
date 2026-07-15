@@ -91,6 +91,39 @@ public class OrderServiceImpl implements OrderService {
         return toDto(order, orderItems);
     }
 
+    @Override
+    public List<OrderResponseDTO> getMyOrders() {
+        User user = getCurrentUser();
+
+        // all orders belonging to this user
+        List<OrderSummary> orders = orderSummaryRepository.findByUser(user);
+
+        return orders.stream()
+                .map(order -> {                                                  // ← block lambda: does 2 steps
+                    List<OrderItem> items = orderItemRepository.findByOrderSummary(order);  // 1. fetch its items
+                    return toDto(order, items);                                  // 2. build the DTO
+                })
+                .toList();
+    }
+
+    @Override
+    public OrderResponseDTO getOrder(Long id) {
+        User user = getCurrentUser();
+
+        // 1. does the order exist at all?
+        OrderSummary order = orderSummaryRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Order not found: " + id));
+
+        // 2. is it THIS user's order? (don't let people read others' orders)
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new NotFoundException("Order not found: " + id);
+        }
+
+        // 3. fetch its items and build the DTO
+        List<OrderItem> items = orderItemRepository.findByOrderSummary(order);
+        return toDto(order, items);
+    }
+
     // ---- helpers ----
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
